@@ -6,15 +6,52 @@ from astropy.io import fits
 from astropy.table import Table, vstack
 import numpy as np
 from photutils.aperture import SkyEllipticalAperture
-from auxcodes import flatten
 import argparse
 import os
 from shutil import copyfile
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from auxcodes import warn, separator
 from termsize import get_terminal_size_linux
+
+def flatten(f):
+    """ Flatten a fits file so that it becomes a 2D image. Return new header and data """
+
+    naxis=f[0].header['NAXIS']
+    if naxis<2:
+        raise RuntimeError('Can\'t make map from this')
+    if naxis==2:
+        f[0].header["WCSAXES"]=2
+        return fits.PrimaryHDU(header=f[0].header,data=f[0].data)
+
+    w = WCS(f[0].header)
+    wn=WCS(naxis=2)
+    
+    wn.wcs.crpix[0]=w.wcs.crpix[0]
+    wn.wcs.crpix[1]=w.wcs.crpix[1]
+    wn.wcs.cdelt=w.wcs.cdelt[0:2]
+    wn.wcs.crval=w.wcs.crval[0:2]
+    wn.wcs.ctype[0]=w.wcs.ctype[0]
+    wn.wcs.ctype[1]=w.wcs.ctype[1]
+    
+    header = wn.to_header()
+    header["NAXIS"]=2
+    header["WCSAXES"]=2
+    copy=('EQUINOX','EPOCH','BMAJ', 'BMIN', 'BPA', 'RESTFRQ', 'TELESCOP', 'OBSERVER')
+    for k in copy:
+        r=f[0].header.get(k)
+        if r is not None:
+            header[k]=r
+
+    dslice=[]
+    for i in range(naxis,0,-1):
+        if i<=2:
+            dslice.append(np.s_[:],)
+        else:
+            dslice.append(0)
+        
+    hdu = fits.PrimaryHDU(header=header,data=f[0].data[tuple(dslice)])
+    return hdu
 
 class bcolors(object):
     HEADER = '\033[95m'
