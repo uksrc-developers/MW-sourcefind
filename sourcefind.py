@@ -12,7 +12,6 @@ from shutil import copyfile
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from termsize import get_terminal_size_linux
 
 def flatten(f):
     """ Flatten a fits file so that it becomes a 2D image. Return new header and data """
@@ -65,13 +64,7 @@ class bcolors(object):
 
 def separator(s):
     print()
-    width,_=get_terminal_size_linux()
-    if len(s)%2 == 1:
-        s+=' '
-    if width is None:
-        width=80
-    lw=(width-len(s)-2)//2
-    sep='='*lw
+    sep='=='
     print("%s%s %s %s%s"%(bcolors.FAIL,sep,s,sep,bcolors.ENDC))
     print()
 
